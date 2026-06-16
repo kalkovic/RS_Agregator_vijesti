@@ -2,48 +2,64 @@
 
 Skalabilna platforma za agregaciju vijesti koja prikuplja, obrađuje i prikazuje članke iz više izvora u gotovo stvarnom vremenu.
 
-Sustav agregira vijesti s hrvatskih portala, grupira ih po događajima te omogućuje pretragu i filtriranje kroz moderno web sučelje.
+Sustav agregira vijesti s hrvatskih portala, grupira ih po događajima, provjerava integritet podataka putem blockchaina te omogućuje pretragu, filtriranje i analitiku kroz moderno web sučelje.
 
 ---
 
 ## 🎯 Pregled projekta
 
-Projekt implementira pojednostavljenu, ali skalabilnu verziju platforme za agregaciju vijesti, inspiriranu rješenjima poput Ground News.
+Projekt implementira skalabilnu platformu za agregaciju vijesti, inspiriranu rješenjima poput Ground News, bez klasifikacije političke pristranosti.
 
 Sustav je dizajniran da:
 
-* prikuplja podatke iz više vanjskih izvora
+* prikuplja podatke iz više vanjskih RSS izvora
 * normalizira heterogene podatke
-* grupira povezane članke u događaje
-* izlaže podatke putem REST API-ja
-* omogućuje pregled i filtriranje kroz frontend aplikaciju
+* grupira povezane članke u događaje pomoću similarity enginea
+* bilježi kriptografske hash-eve događaja na blockchain
+* izlaže podatke putem REST API-ja kroz mikroservise
+* omogućuje autentifikaciju korisnika i administratorski pristup
+* pruža statističke uvide kroz analytics servis
 
 ---
 
 ## 🏗️ Arhitektura sustava
 
+```text
+                    FRONTEND
+                      React
+                        │
+                        ▼
+        ┌───────────────┼───────────────┐
+        ▼               ▼               ▼
+ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+ │ News Service │ │ Analytics    │ │ Auth Service │
+ │   FastAPI    │ │   FastAPI    │ │   FastAPI    │
+ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+        │                │                │
+        ▼                ▼                ▼
+    DynamoDB         DynamoDB         DynamoDB
+        │
+        ▼
+ Blockchain Service
+        │
+        ▼
+ Solidity Smart Contract
+        │
+        ▼
+ Ethereum Test Network (Ganache)
 ```
-                ┌────────────────────┐
-                │   React frontend   │
-                └─────────┬──────────┘
-                          │ HTTP
-                          ▼
-                ┌────────────────────┐
-                │   FastAPI backend  │
-                └─────────┬──────────┘
-                          │
-        ┌─────────────────┼─────────────────┐
-        ▼                 ▼                 ▼
- ┌────────────┐   ┌──────────────┐   ┌──────────────┐
- │  Fetcher   │   │ Normalizer   │   │ Aggregator   │
- │ (aiohttp)  │   │              │   │              │
- └────────────┘   └──────────────┘   └──────────────┘
-                          │
-                          ▼
-                ┌────────────────────┐
-                │     DynamoDB       │
-                └────────────────────┘
-```
+
+### News Service
+
+Odgovoran za dohvat RSS feedova, normalizaciju podataka, grupiranje sličnih članaka u događaje, pohranu u DynamoDB i interakciju s blockchain slojem.
+
+### Auth Service
+
+Upravlja registracijom, prijavom, JWT autentifikacijom i kontrolom pristupa temeljenom na ulogama (User/Admin).
+
+### Analytics Service
+
+Pruža statističke uvide: najaktivniji izvori, distribucija po kategorijama i metrike događaja.
 
 ---
 
@@ -57,192 +73,160 @@ Sustav je dizajniran da:
   * Index.hr
   * Jutarnji.hr
   * 24sata.hr
-* Jednostavno proširenje na nove izvore
-
----
 
 ### 🧠 Obrada podataka
 
 * Normalizacija podataka iz različitih izvora u jedinstveni format
-* Grupiranje članaka po događajima
+* Similarity engine za grupiranje članaka po događajima
 * Jedan događaj = više izvora koji pokrivaju istu temu
 
----
+### 🔗 Blockchain integritet
+
+* Hashiranje metapodataka događaja
+* Bilježenje hash-a na Ethereum test mreži (Ganache)
+* Verifikacija da podaci nisu modificirani nakon obrade
 
 ### 🔍 Pretraga i filtriranje
 
 * Pretraga po naslovu vijesti
-* Filtriranje po:
+* Filtriranje po kategoriji i izvoru
 
-  * kategoriji
-  * izvoru
-* Pripremljeno za daljnje optimizacije (indeksi)
+### 🔐 Autentifikacija
 
----
+* Registracija i prijava korisnika
+* JWT tokeni
+* Uloge: User i Admin
 
-### 🗄️ Pohrana podataka
+### 📊 Analitika
 
-* NoSQL baza podataka (DynamoDB)
-* Model temeljen na događajima
-* Optimizirano za čitanje podataka
-
----
-
-### 🌐 Web sučelje
-
-* React SPA aplikacija
-* Dinamičko dohvaćanje podataka preko REST API-ja
-* Funkcionalnosti:
-
-  * pretraga
-  * filtriranje
-  * prikaz broja izvora po vijesti
+* Najaktivniji izvori vijesti
+* Distribucija članaka po kategorijama
+* Metrike događaja
 
 ---
 
 ## 📦 Tehnologije
 
-### Backend
-
-* FastAPI
-* Python (asyncio, aiohttp)
-* Pydantic
-* DynamoDB (boto3)
-
 ### Frontend
 
-* React
-* Axios
+* React, React Router, Axios, CSS3
 
-### Ostalo
+### Backend
 
-* Docker
-* Git / GitHub
+* Python 3.10+, FastAPI, asyncio, aiohttp, Pydantic
+
+### Baza podataka
+
+* DynamoDB (boto3)
+
+### Blockchain
+
+* Solidity, Web3.py, Ganache
+
+### Infrastruktura
+
+* Docker, Docker Compose
 
 ---
 
 ## 📂 Struktura projekta
 
-```
-news-aggregator/
+```text
+RS_Agregator_vijesti/
 │
-├── backend/
-│   ├── app/
-│   │   ├── api/
-│   │   ├── services/
-│   │   ├── db/
-│   │   └── main.py
-│   └── requirements.txt
+├── services/
+│   ├── news-service/
+│   │   ├── app/
+│   │   │   ├── api/
+│   │   │   ├── services/
+│   │   │   ├── db/
+│   │   │   ├── models/
+│   │   │   ├── config.py
+│   │   │   └── main.py
+│   │   └── requirements.txt
+│   ├── auth-service/
+│   └── analytics-service/
 │
-└── frontend/
-    ├── src/
-    │   ├── components/
-    │   └── App.js
-    └── public/
+├── frontend/
+├── blockchain/
+├── docker/
+├── .env.example
+└── README.md
 ```
 
 ---
 
 ## ▶️ Pokretanje projekta
 
-### Backend
+### News Service (Day 1)
 
-```
-cd backend
+```bash
+cd services/news-service
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+Provjera:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Očekivani odgovor:
+
+```json
+{"status":"ok","service":"news-service"}
+```
+
+Kopirajte `.env.example` u `.env` i prilagodite vrijednosti po potrebi.
 
 ---
 
-### Frontend
+## 🔌 API (planirano)
 
-```
-cd frontend
-npm install
-npm start
-```
+### News Service
 
----
+| Endpoint | Opis |
+|----------|------|
+| `GET /health` | Status servisa |
+| `GET /api/events` | Popis događaja (q, category, source) |
+| `GET /api/events/{id}` | Detalj događaja |
+| `GET /api/events/{id}/verify` | Blockchain verifikacija |
+| `POST /api/fetch` | Ručno pokretanje dohvata (admin) |
 
-## 🔌 API
+### Auth Service
 
-### Dohvat događaja
+| Endpoint | Opis |
+|----------|------|
+| `POST /api/auth/register` | Registracija |
+| `POST /api/auth/login` | Prijava |
+| `GET /api/auth/me` | Trenutni korisnik |
 
-```
-GET /api/events
-```
+### Analytics Service
 
-### Query parametri:
-
-* `q` → pretraga po tekstu
-* `category` → filtriranje po kategoriji
-* `source` → filtriranje po izvoru
-
-Primjer:
-
-```
-/api/events?q=ai&category=News
-```
+| Endpoint | Opis |
+|----------|------|
+| `GET /api/analytics/sources` | Aktivnost izvora |
+| `GET /api/analytics/categories` | Distribucija kategorija |
 
 ---
 
-## ⚡ Skalabilnost
+## 🧪 Plan razvoja (7 dana)
 
-Sustav je dizajniran s naglaskom na horizontalnu skalabilnost:
-
-* stateless backend
-* asinkroni dohvat podataka
-* modularna arhitektura (servisi)
-* NoSQL baza podataka
-
-Omogućuje:
-
-* pokretanje više instanci aplikacije
-* paralelni dohvat podataka
-* jednostavno proširenje sustava
-
----
-
-## 🔄 Tijek obrade podataka
-
-1. Dohvat vijesti iz vanjskih izvora (async)
-2. Normalizacija podataka
-3. Grupiranje po događajima
-4. Pohrana u bazu podataka
-5. Dohvat putem API-ja
-6. Prikaz u frontend aplikaciji
-
----
-
-## 🧪 Razvoj projekta
-
-Projekt je razvijan postupno kroz sljedeće faze:
-
-1. Osnovni backend (FastAPI)
-2. Definiranje modela podataka
-3. Asinkroni dohvat vijesti
-4. Normalizacija podataka
-5. Grupiranje događaja
-6. Integracija baze podataka
-7. Pretraga i filtriranje
-8. Razvoj frontend aplikacije
-9. Dockerizacija
-
----
-
-## 🚀 Moguća proširenja
-
-* Naprednije grupiranje (NLP)
-* Real-time ažuriranje (WebSocket)
-* Personalizacija korisnika
-* Cache sloj (Redis)
-* Paginacija i rangiranje vijesti
+| Dan | Fokus |
+|-----|-------|
+| 1 | Monorepo, News Service skeleton, modeli, config |
+| 2 | RSS dohvat i normalizacija |
+| 3 | Similarity engine, agregacija, DynamoDB |
+| 4 | API filtri + blockchain integritet |
+| 5 | Auth Service (JWT, uloge) |
+| 6 | Analytics Service + React frontend |
+| 7 | Docker Compose i integracija |
 
 ---
 
 ## 📌 Napomena
 
-Projekt je inspiriran modernim platformama za agregaciju vijesti te demonstrira korištenje asinkronog programiranja, REST arhitekture i skalabilnih sustava.
+Projekt demonstrira mikroservisnu arhitekturu, asinkrono programiranje, REST API-je, NoSQL pohranu i blockchain verifikaciju integriteta podataka.
 
 ---
