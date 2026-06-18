@@ -1,14 +1,12 @@
-# services/news-service/app/db/repository.py
 import boto3
 from botocore.exceptions import ClientError
 from app.config import settings
 from app.models.article import Article
 from app.models.event import Event
+from boto3.dynamodb.conditions import Key, Attr
 
 def get_dynamodb_table():
-    """
-    Kreira i vraća instancu DynamoDB tablice.
-    """
+
     db = boto3.resource(
         'dynamodb',
         endpoint_url=settings.dynamodb_endpoint,
@@ -19,17 +17,12 @@ def get_dynamodb_table():
     return db.Table(settings.dynamodb_events_table)
 
 def save_events_and_articles(articles: list[Article], events: list[Event]):
-    """
-    Sprema grupirane događaje i njihove pripadajuće članke u DynamoDB.
-    Koristi mode="json" kako bi se HttpUrl i datetime pretvorili u stringove.
-    """
+
     table = get_dynamodb_table()
     
     with table.batch_writer() as batch:
-        # 1. Spremanje događaja
         for event in events:
             try:
-                # mode="json" pretvara sve specijalne Pydantic tipove u čiste stringove
                 item = event.model_dump(mode="json")
                 item["pk"] = f"EVENT#{event.id}"
                 item["type"] = "EVENT"
@@ -37,7 +30,6 @@ def save_events_and_articles(articles: list[Article], events: list[Event]):
             except ClientError as e:
                 print(f"Greška pri spremanju događaja {event.id}: {e}")
 
-        # 2. Spremanje članaka
         for article in articles:
             try:
                 item = article.model_dump(mode="json")
@@ -50,10 +42,7 @@ def save_events_and_articles(articles: list[Article], events: list[Event]):
                 print(f"Greška pri spremanju članka {article.id}: {e}")
 
 def get_all_active_events() -> list[Event]:
-    """
-    Dohvaća sve postojeće događaje iz baze kako bismo s njima 
-    mogli usporediti nove članke.
-    """
+
     table = get_dynamodb_table()
     try:
         response = table.scan(
@@ -66,3 +55,19 @@ def get_all_active_events() -> list[Event]:
     except ClientError as e:
         print(f"Greška pri dohvaćanju događaja: {e}")
         return []
+
+def get_event_by_id(event_id: str):
+    table = get_dynamodb_table()
+    try:
+        response = table.scan(
+            FilterExpression=Attr("id").eq(event_id)
+        )
+        items = response.get("Items", [])
+        
+        if items:
+            return items[0]
+            
+        return None
+    except Exception as e:
+        print(f"BOTO3 GREŠKA: {e}")
+        return None

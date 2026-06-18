@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Query, HTTPException
 from app.services.fetcher import AsyncRSSFetcher
 from app.services.parser import RSSParser
 from app.services.normalizer import ArticleNormalizer
@@ -6,7 +6,7 @@ from app.models.article import Article
 from app.models.event import Event  
 
 from app.config import settings
-from app.db.repository import get_all_active_events, save_events_and_articles
+from app.db.repository import get_all_active_events, save_events_and_articles, get_event_by_id
 from app.services.aggregator import EventAggregator
 
 app = FastAPI(title="News Aggregator - News Service")
@@ -79,7 +79,35 @@ async def fetch_and_normalize_news():
     return articles
 
 @app.get("/api/events", response_model=list[Event])
-def get_all_events():
+def get_all_events(
+    q: str | None = Query(None, description="Pretraga po naslovu događaja"),
+    category: str | None = Query(None, description="Filtriranje po kategoriji"),
+    source: str | None = Query(None, description="Filtriranje po izvoru (npr. index-hr)")
+):
 
     events = get_all_active_events()
-    return events
+    filtered_events = []
+    
+    for event in events:
+        if category and event.category and category.lower() not in event.category.lower():
+            continue
+            
+        if q and q.lower() not in event.title.lower():
+            continue
+            
+        if source:
+            has_source = any(source.lower() in art.source.lower() for art in event.articles)
+            if not has_source:
+                continue
+                
+        filtered_events.append(event)
+        
+    return filtered_events
+
+@app.get("/api/events/{event_id}", response_model=Event)
+def get_event_detail(event_id: str):
+ 
+    event = get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Događaj nije pronađen")
+    return event
