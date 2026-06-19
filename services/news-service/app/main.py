@@ -1,4 +1,4 @@
-from app.blockchain_utils import record_event_on_blockchain
+from app.blockchain_utils import record_event_on_blockchain, calculate_event_hash, verify_event_on_blockchain 
 from fastapi import FastAPI, Query, HTTPException
 from app.services.fetcher import AsyncRSSFetcher
 from app.services.parser import RSSParser
@@ -133,3 +133,29 @@ def get_event_detail(event_id: str):
     if not event:
         raise HTTPException(status_code=404, detail="Događaj nije pronađen")
     return event
+
+@app.get("/api/events/{event_id}/verify")
+def verify_event_integrity(event_id: str):
+    event = get_event_by_id(event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Događaj nije pronađen")
+
+    raw_articles = event.get("articles", []) if isinstance(event, dict) else event.articles    
+    articles_list = []
+
+    for art in raw_articles:
+        if hasattr(art, "model_dump"):
+            articles_list.append(art.model_dump())  
+        elif hasattr(art, "dict"):
+            articles_list.append(art.dict())        
+        else:
+            articles_list.append(art)
+            
+    local_hash = calculate_event_hash(articles_list)
+    
+    verification_result = verify_event_on_blockchain(event_id, local_hash)
+    
+    if verification_result.get("status") == "error":
+        raise HTTPException(status_code=500, detail=verification_result.get("message"))
+        
+    return verification_result

@@ -50,3 +50,25 @@ def record_event_on_blockchain(event_id: str, articles: list) -> bool:
     except Exception as e:
         print(f"❌ Greška pri zapisu na blockchain: {e}")
         return False
+    
+def verify_event_on_blockchain(event_id: str, local_hash: str) -> dict:
+    try:
+        contract = get_contract()
+        if not contract or not w3.is_connected():
+            return {"status": "error", "message": "Nema veze s blockchainom."}
+            
+        try:
+            stored_hash = contract.functions.getEventHash(event_id).call()
+        except Exception as e:
+            return {"status": "error", "message": f"Događaj nije na blockchainu: {str(e)}"}
+            
+        is_valid = (local_hash == stored_hash)
+        
+        return {
+            "status": "success",
+            "is_valid": is_valid,
+            "local_hash": local_hash,
+            "blockchain_hash": stored_hash
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Greška pri provjeri: {str(e)}"}
