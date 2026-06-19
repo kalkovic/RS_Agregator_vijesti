@@ -1,3 +1,4 @@
+from app.blockchain_utils import record_event_on_blockchain
 from fastapi import FastAPI, Query, HTTPException
 from app.services.fetcher import AsyncRSSFetcher
 from app.services.parser import RSSParser
@@ -53,9 +54,30 @@ async def run_core_pipeline():
 
     print("[Pipeline] Zapisujem grupirane događaje i artikle u DynamoDB...")
     save_events_and_articles(updated_articles, updated_events)
+    
+    print("[Pipeline] Šaljem događaje na ovjeru na Blockchain...")
+    for event in updated_events:
+        event_id = event.id if hasattr(event, "id") else event["id"]
+        
+        raw_articles = event.articles if hasattr(event, "articles") else event["articles"]
+        articles_list = []
+        for art in raw_articles:
+            if hasattr(art, "model_dump"):
+                articles_list.append(art.model_dump())  
+            elif hasattr(art, "dict"):
+                articles_list.append(art.dict())        
+            else:
+                articles_list.append(art)               
+        
+        blockchain_success = record_event_on_blockchain(event_id=event_id, articles=articles_list)
+        if blockchain_success:
+            print(f"🔗 Blockchain ovjera uspješna za event {event_id}.")
+        else:
+            print(f"⚠️ DynamoDB spremljen, ali zapis na blockchain nije uspio za {event_id}.")
+
     print("--- [Pipeline] Pipeline uspješno izvršen! ---\n")
     
-    return updated_articles
+    return updated_articles    
 
 
 @app.on_event("startup")
