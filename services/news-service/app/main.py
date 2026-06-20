@@ -1,5 +1,6 @@
 from app.blockchain_utils import record_event_on_blockchain, calculate_event_hash, verify_event_on_blockchain 
 from fastapi import FastAPI, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from app.services.fetcher import AsyncRSSFetcher
 from app.services.parser import RSSParser
 from app.services.normalizer import ArticleNormalizer
@@ -11,6 +12,14 @@ from app.db.repository import get_all_active_events, save_events_and_articles, g
 from app.services.aggregator import EventAggregator
 
 app = FastAPI(title="News Aggregator - News Service")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"], 
+    allow_credentials=True,
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+)
 
 RSS_SOURCES = {
     "index": "https://www.index.hr/rss",
