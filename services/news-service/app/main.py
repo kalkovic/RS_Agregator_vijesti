@@ -156,6 +156,6 @@ def verify_event_integrity(event_id: str):
     verification_result = verify_event_on_blockchain(event_id, local_hash)
     
     if verification_result.get("status") == "error":
-        raise HTTPException(status_code=500, detail=verification_result.get("message"))
+        raise HTTPException(status_code=404, detail=verification_result.get("message"))
         
     return verification_result
