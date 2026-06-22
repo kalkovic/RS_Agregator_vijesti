@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from .schemas import UserCreate, UserLogin
 from .hashing import Hash
@@ -12,6 +13,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Auth Service", version="1.0.0", lifespan=lifespan)
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/api/auth/register")
 def register(user: UserCreate):

@@ -43,3 +43,27 @@ def create_users_table():
 
 def get_users_table():
     return dynamodb.Table('Users')
+
+def get_user_by_email(email: str):
+    table = get_users_table()
+    try:
+        response = table.get_item(Key={'email': email})
+        return response.get('Item')
+    except ClientError as e:
+        print(f"Greška pri dohvaćanju korisnika: {e}")
+        return None
+
+def create_user_in_db(email: str, hashed_password: str, full_name: str):
+    table = get_users_table()
+    try:
+        table.put_item(
+            Item={
+                'email': email,
+                'password': hashed_password,
+                'full_name': full_name
+            }
+        )
+        return True
+    except ClientError as e:
+        print(f"Greška pri spremanju korisnika: {e}")
+        return False
