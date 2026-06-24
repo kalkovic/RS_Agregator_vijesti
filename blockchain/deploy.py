@@ -7,9 +7,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CONTRACT_PATH = os.path.join(BASE_DIR, "NewsRegistry.sol")
 OUTPUT_PATH = os.path.join(BASE_DIR, "deployed_contract.json")
 
-print("-> Instaliram i postavljam Solidity kompajler v0.8.0...")
-install_solc("0.8.0")
-
 with open(CONTRACT_PATH, "r", encoding="utf-8") as file:
     news_registry_file = file.read()
 
@@ -32,7 +29,7 @@ compiled_sol = compile_standard(
 bytecode = compiled_sol["contracts"]["NewsRegistry.sol"]["NewsRegistry"]["evm"]["bytecode"]["object"]
 abi = json.loads(compiled_sol["contracts"]["NewsRegistry.sol"]["NewsRegistry"]["metadata"])["output"]["abi"]
 
-ganache_url = "http://127.0.0.1:8545"
+ganache_url = "http://ganache-cli:8545"
 w3 = Web3(Web3.HTTPProvider(ganache_url))
 
 if not w3.is_connected():
