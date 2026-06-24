@@ -9,7 +9,7 @@ from app.models.article import Article
 from app.models.event import Event  
 
 from app.config import settings
-from app.db.repository import get_all_active_events, save_events_and_articles, get_event_by_id
+from app.db.repository import get_all_active_events, save_events_and_articles, get_event_by_id, update_event_blockchain_hash
 from app.services.aggregator import EventAggregator
 
 from .security import get_current_user, require_admin
@@ -68,19 +68,20 @@ async def run_core_pipeline():
     logger.info("[Pipeline] Šaljem događaje na ovjeru na Blockchain...")
     for event in updated_events:
         event_id = event.id if hasattr(event, "id") else event["id"]
-        
+
         raw_articles = event.articles if hasattr(event, "articles") else event["articles"]
         articles_list = []
         for art in raw_articles:
             if hasattr(art, "model_dump"):
-                articles_list.append(art.model_dump())  
+                articles_list.append(art.model_dump())
             elif hasattr(art, "dict"):
-                articles_list.append(art.dict())        
+                articles_list.append(art.dict())
             else:
-                articles_list.append(art)               
-        
-        blockchain_success = record_event_on_blockchain(event_id=event_id, articles=articles_list)
-        if blockchain_success:
+                articles_list.append(art)
+
+        result = record_event_on_blockchain(event_id=event_id, articles=articles_list)
+        if result["success"] and result["tx_hash"]:
+            update_event_blockchain_hash(event_id, result["tx_hash"])
             logger.info(f"🔗 Blockchain ovjera uspješna za event {event_id}.")
         else:
             logger.error(f"⚠️ DynamoDB spremljen, ali zapis na blockchain nije uspio za {event_id}.")

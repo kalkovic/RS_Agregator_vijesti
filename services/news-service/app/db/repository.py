@@ -63,11 +63,29 @@ def get_event_by_id(event_id: str):
             FilterExpression=Attr("id").eq(event_id)
         )
         items = response.get("Items", [])
-        
+
         if items:
             return items[0]
-            
+
         return None
     except Exception as e:
         print(f"BOTO3 GREŠKA: {e}")
         return None
+
+def update_event_blockchain_hash(event_id: str, tx_hash: str):
+    table = get_dynamodb_table()
+    try:
+        response = table.scan(
+            FilterExpression=Attr("id").eq(event_id)
+        )
+        items = response.get("Items", [])
+
+        if items:
+            item = items[0]
+            item["blockchain_tx_hash"] = tx_hash
+            table.put_item(Item=item)
+            return True
+        return False
+    except Exception as e:
+        print(f"GREŠKA pri ažuriranju blockchain hash-a: {e}")
+        return False

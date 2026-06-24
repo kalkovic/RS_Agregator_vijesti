@@ -2,12 +2,11 @@ import hashlib
 import json
 import os
 from web3 import Web3
+from app.config import settings
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CONTRACT_JSON_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", "..", "..", "blockchain", "deployed_contract.json"))
+CONTRACT_JSON_PATH = "/blockchain/deployed_contract.json"
 
-GANACHE_URL = os.getenv("GANACHE_URL", "http://127.0.0.1:8545")
-w3 = Web3(Web3.HTTPProvider(GANACHE_URL))
+w3 = Web3(Web3.HTTPProvider(settings.ganache_url))
 
 def get_contract():
     if not os.path.exists(CONTRACT_JSON_PATH):
@@ -29,27 +28,28 @@ def calculate_event_hash(articles: list) -> str:
     
     return hashlib.sha256(combined_string.encode("utf-8")).hexdigest()
 
-def record_event_on_blockchain(event_id: str, articles: list) -> bool:
+def record_event_on_blockchain(event_id: str, articles: list) -> dict:
     try:
         contract = get_contract()
         if not contract or not w3.is_connected():
             print("❌ Neuspješno spajanje na blockchain.")
-            return False
-            
+            return {"success": False, "tx_hash": None}
+
         content_hash = calculate_event_hash(articles)
-        
+
         w3.eth.default_account = w3.eth.accounts[0]
-        
+
         print(f"🔗 Zapisujem na blockchain: Event {event_id} sa hashem {content_hash}...")
-        
+
         tx_hash = contract.functions.storeEvent(event_id, content_hash).transact()
         w3.eth.wait_for_transaction_receipt(tx_hash)
-        
-        print(f"✅ Uspješno zapisano! TX Hash: {tx_hash.hex()}")
-        return True
+
+        tx_hash_hex = tx_hash.hex()
+        print(f"✅ Uspješno zapisano! TX Hash: {tx_hash_hex}")
+        return {"success": True, "tx_hash": tx_hash_hex}
     except Exception as e:
         print(f"❌ Greška pri zapisu na blockchain: {e}")
-        return False
+        return {"success": False, "tx_hash": None}
     
 def verify_event_on_blockchain(event_id: str, local_hash: str) -> dict:
     try:
