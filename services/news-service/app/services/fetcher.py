@@ -10,7 +10,6 @@ class AsyncRSSFetcher:
         self.timeout = aiohttp.ClientTimeout(total=timeouts)
 
     async def fetch_single_feed(self, session: aiohttp.ClientSession, source_name: str, url: str) -> str | None:
-        """Dohvaća XML sadržaj za jedan RSS izvor."""
         try:
             logger.info(f"Pokrećem dohvaćanje za: {source_name} ({url})")
             async with session.get(url, timeout=self.timeout) as response:
@@ -27,7 +26,6 @@ class AsyncRSSFetcher:
             return None
 
     async def fetch_all_feeds(self, sources: dict[str, str]) -> dict[str, str]:
-        """Paralelno dohvaća sve zadane RSS feedove."""
         async with aiohttp.ClientSession() as session:
             tasks = {
                 source_name: self.fetch_single_feed(session, source_name, url)

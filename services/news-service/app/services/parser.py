@@ -6,7 +6,6 @@ logger = logging.getLogger(__name__)
 class RSSParser:
     @staticmethod
     def parse_xml(xml_content: str) -> list[dict[str, str]]:
-        """Parsira XML sadržaj RSS feeda i izvlači sirove tekstualne podatke."""
         articles = []
         try:
             root = ET.fromstring(xml_content)
