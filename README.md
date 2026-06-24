@@ -166,6 +166,12 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
+# Pokretanje cijelog sustava
+docker compose up -d --build
+
+# Zaustavljanje sustava
+docker compose down
+
 Provjera:
 
 ```bash
@@ -215,6 +221,15 @@ Detaljne upute nalaze se u [Blockchain dokumentaciji](./blockchain/README.md).
 | `GET /api/analytics/categories` | Distribucija kategorija |
 
 ---
+
+| Servis | Lokalni port | Opis |
+| :--- | :--- | :--- |
+| **Frontend** | `http://localhost:3000` | Glavno sučelje aplikacije |
+| **News Service** | `http://localhost:8080` | API za vijesti |
+| **Auth Service** | `http://localhost:8081` | API za autentifikaciju |
+| **Analytics Service** | `http://localhost:8082` | API za statistiku |
+| **DynamoDB** | `http://localhost:8001` | Lokalni NoSQL admin panel |
+| **Ganache** | `http://localhost:8545` | Lokalna Blockchain mreža |
 
 ## 🧪 Plan razvoja (7 dana)
 
