@@ -3,20 +3,32 @@ import { useParams, Link } from 'react-router-dom';
 import { newsApi } from '../api';
 
 function EventDetailPage() {
-  const { id } = useParams(); // Hvata ID događaja iz URL-a
+  const { id } = useParams(); 
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+ useEffect(() => {
     newsApi.get(`/api/events/${id}`)
       .then(response => {
         setEvent(response.data);
         setLoading(false);
+                if (!response.data.blockchain_tx_hash) {
+          newsApi.get(`/api/events/${id}/verify`)
+            .then(verifyRes => {
+              if (verifyRes.data.is_valid) {
+                setEvent(prev => ({
+                  ...prev,
+                  blockchain_tx_hash: verifyRes.data.blockchain_hash 
+                }));
+              }
+            })
+            .catch(err => console.log("Blockchain verifikacija još nije spremna."));
+        }
       })
       .catch(err => {
         console.error("Greška pri dohvaćanju detalja događaja:", err);
-        setError("Nije moguće učitati detalje događaja. Provjerite postoji li endpoint.");
+        setError("Nije moguće učitati detalje događaja.");
         setLoading(false);
       });
   }, [id]);
@@ -42,6 +54,9 @@ function EventDetailPage() {
   }
 
   const isVerified = event.blockchain_tx_hash !== null && event.blockchain_tx_hash !== undefined;
+
+  console.log("Stanje eventa:", event);
+  console.log("Je li verificirano:", isVerified);
 
   return (
     <div className="max-w-4xl mx-auto">
